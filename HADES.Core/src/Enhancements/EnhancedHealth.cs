@@ -71,12 +71,12 @@ namespace HADES.Core
 
         private void Start()
         {
-            if (!Enabled) return;
             _initialHealth = GM.GetPlayerHealth();
         }
 
         private void Update()
         {
+            // Player.
             if (!Enabled) return;
             //i'm not sure who thought that the formula was (_initialhealth / currenthealth) * 100 lol - potatoes
             HealthPercentage = CurrentHealth / _initialHealth * 100;
@@ -97,7 +97,7 @@ namespace HADES.Core
                     //if the player's hp is lower than what it was, assume damage taken, lower hp
                     if (CurrentHealth < _healthMonitor) _currentRegenDelayLength = 0;
                     //go add player hp
-                    Player.HealPercent(RegenSpeed * 0.02f);
+                    Player.HealPercent(RegenSpeed / 50);
                 }
                 else
                 {

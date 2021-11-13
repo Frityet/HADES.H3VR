@@ -57,6 +57,15 @@ namespace HADES.Core
             {
                 MovementManager.SlidingSpeed = value;
                 MovementManager.DashSpeed = value;
+
+                var dir = new Vector3 {
+                    x = value,
+                    y = value,
+                    z = value
+                };
+
+                MovementManager.SetTopSpeedLastSecond(dir);
+                MovementManager.SetFrameSpeed(dir);
             }
         }
 
@@ -294,7 +303,7 @@ namespace HADES.Core
 
         private void Update()
         {
-
+            if (!Enabled) return;
             //Decrease the players speed based upon how much stamina there is compared to the max amount of stamina
             PlayerSpeed *= Convert.ToSingle(Stamina / MaxStamina);
         }
@@ -307,9 +316,13 @@ namespace HADES.Core
 
             //Stamina is drained/gained based off the base stamina loss, plus the weight, plus the player speed
             if (PlayerSpeed > StaminaLossStartSpeed && Stamina > 0)
-                Stamina -= Convert.ToSingle((StaminaLoss + Weight + PlayerSpeed) * 0.02);
+                Stamina -= Convert.ToSingle((StaminaLoss + Weight + PlayerSpeed) / 50);
             else if (PlayerSpeed < StaminaLossStartSpeed && Stamina < MaxStamina)
-                Stamina += Convert.ToSingle((StaminaGain - Weight - PlayerSpeed) * 0.02);
+            {
+                float staminaGain = (StaminaGain - Weight - PlayerSpeed);
+                Mathf.Clamp(staminaGain, 0, StaminaGain - PlayerSpeed);
+                Stamina += Convert.ToSingle(staminaGain / 50);
+            }
 
             if (_timer < 10f)
             {
@@ -319,29 +332,29 @@ namespace HADES.Core
             else 
             {
                 ++_iterations;
-                Debug.Print($"ITERATION {_iterations}");
-                Debug.Print("------------------------");
-                Debug.Print($"Stamina: {Stamina}/{MaxStamina}");
-                Debug.Print($"Stamina Loss: {StaminaLoss}");
-                Debug.Print($"Stamina Gain: {StaminaGain}");
-                Debug.Print($"Weight: {Weight}");
-                Debug.Print($"Player Speed: {PlayerSpeed}");
-                Debug.Print($"Stamina modifier: {Convert.ToSingle((StaminaLoss + Weight + PlayerSpeed) * 0.02)}");
+                // Debug.Print($"ITERATION {_iterations}");
+                // Debug.Print("------------------------");
+                // Debug.Print($"Stamina: {Stamina}/{MaxStamina}");
+                // Debug.Print($"Stamina Loss: {StaminaLoss}");
+                // Debug.Print($"Stamina Gain: {StaminaGain}");
+                // Debug.Print($"Weight: {Weight}");
+                // Debug.Print($"Player Speed: {PlayerSpeed}");
+                // Debug.Print($"Stamina modifier: {Convert.ToSingle((StaminaLoss + Weight + PlayerSpeed) * 0.02)}");
                 _timer = 0f;
             }
         }
 
-        private void JumpPlus(FVRMovementManager.orig_Jump _, FistVR.FVRMovementManager self)
+        private void JumpPlus(FVRMovementManager.orig_Jump _, FistVR.FVRMovementManager @this)
         {
             if (Stamina < JumpStaminaModifier) return;
 
             Stamina -= JumpStaminaModifier + Weight;
 
-            if ((self.Mode != FistVR.FVRMovementManager.MovementMode.Armswinger || self.m_armSwingerGrounded)
-                && (self.Mode != FistVR.FVRMovementManager.MovementMode.SingleTwoAxis
-                    && self.Mode != FistVR.FVRMovementManager.MovementMode.TwinStick || self.m_twoAxisGrounded))
+            if ((@this.Mode != FistVR.FVRMovementManager.MovementMode.Armswinger || @this.m_armSwingerGrounded)
+                && (@this.Mode != FistVR.FVRMovementManager.MovementMode.SingleTwoAxis
+                    && @this.Mode != FistVR.FVRMovementManager.MovementMode.TwinStick || @this.m_twoAxisGrounded))
             {
-                self.DelayGround(0.1f);
+                @this.DelayGround(0.1f);
                 float jumpForce = GM.Options.SimulationOptions.PlayerGravityMode switch
                 {
                     SimulationOptions.GravityMode.Realistic => RealisticGravityJumpForce,
@@ -351,28 +364,28 @@ namespace HADES.Core
                     _                                       => 0f
                 };
                 jumpForce *= 0.65f;
-                switch (self.Mode)
+                switch (@this.Mode)
                 {
                     case FistVR.FVRMovementManager.MovementMode.Armswinger:
-                        self.DelayGround(0.25f);
-                        self.m_armSwingerVelocity.y = Mathf.Clamp(self.m_armSwingerVelocity.y, 0f,
-                                                                  self.m_armSwingerVelocity.y);
-                        self.m_armSwingerVelocity.y = jumpForce;
-                        self.m_armSwingerGrounded = false;
+                        @this.DelayGround(0.25f);
+                        @this.m_armSwingerVelocity.y = Mathf.Clamp(@this.m_armSwingerVelocity.y, 0f,
+                                                                  @this.m_armSwingerVelocity.y);
+                        @this.m_armSwingerVelocity.y = jumpForce;
+                        @this.m_armSwingerGrounded = false;
                         break;
                     case FistVR.FVRMovementManager.MovementMode.SingleTwoAxis:
-                        self.DelayGround(0.25f);
-                        self.m_twoAxisVelocity.y =
-                            Mathf.Clamp(self.m_twoAxisVelocity.y, 0f, self.m_twoAxisVelocity.y);
-                        self.m_twoAxisVelocity.y = jumpForce;
-                        self.m_twoAxisGrounded = false;
+                        @this.DelayGround(0.25f);
+                        @this.m_twoAxisVelocity.y =
+                            Mathf.Clamp(@this.m_twoAxisVelocity.y, 0f, @this.m_twoAxisVelocity.y);
+                        @this.m_twoAxisVelocity.y = jumpForce;
+                        @this.m_twoAxisGrounded = false;
                         break;
                     case FistVR.FVRMovementManager.MovementMode.TwinStick:
-                        self.DelayGround(0.25f);
-                        self.m_twoAxisVelocity.y =
-                            Mathf.Clamp(self.m_twoAxisVelocity.y, 0f, self.m_twoAxisVelocity.y);
-                        self.m_twoAxisVelocity.y = jumpForce;
-                        self.m_twoAxisGrounded = false;
+                        @this.DelayGround(0.25f);
+                        @this.m_twoAxisVelocity.y =
+                            Mathf.Clamp(@this.m_twoAxisVelocity.y, 0f, @this.m_twoAxisVelocity.y);
+                        @this.m_twoAxisVelocity.y = jumpForce;
+                        @this.m_twoAxisGrounded = false;
                         break;
                 }
             }
